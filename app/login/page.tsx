@@ -1,115 +1,224 @@
 'use client';
 
-import { useState } from 'react';
-import { Form, Input, Button, message, Divider } from 'antd';
-import { UserOutlined, LockOutlined, GoogleOutlined, GithubOutlined } from '@ant-design/icons';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabaseClient';
+import React, { useState } from 'react';
+import { Form, Input, Checkbox, Button, message } from 'antd';
+import { GoogleOutlined, AppleFilled, EyeInvisibleOutlined, EyeTwoTone, MailOutlined, ArrowLeftOutlined, UserOutlined } from '@ant-design/icons';
+import { checkUserExists } from '@/app/actions/checkUser';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
+    const [stage, setStage] = useState<'EMAIL' | 'LOGIN_PASSWORD' | 'SIGNUP_DETAILS'>('EMAIL');
+    const [email, setEmail] = useState('');
     const supabase = createClient();
+    const router = useRouter();
+    const [form] = Form.useForm();
 
-    const onFinish = async (values: any) => {
+    const handleEmailSubmit = async (values: any) => {
+        setLoading(true);
+        const inputEmail = values.email;
+        setEmail(inputEmail);
+
+        try {
+            const exists = await checkUserExists(inputEmail);
+            if (exists) {
+                setStage('LOGIN_PASSWORD');
+            } else {
+                setStage('SIGNUP_DETAILS');
+            }
+        } catch (error) {
+            console.error("Check failed", error);
+            message.error("Verification failed. Please try again.");
+        }
+        setLoading(false);
+    };
+
+    const handleLogin = async (values: any) => {
         setLoading(true);
         const { error } = await supabase.auth.signInWithPassword({
-            email: values.email,
+            email: email,
             password: values.password,
         });
-
         if (error) {
-            message.error(error.message);
+            if (error.message.includes('Invalid login credentials')) {
+                message.error('Incorrect password or user not found.');
+            } else {
+                message.error(error.message);
+            }
         } else {
-            message.success('Welcome back!');
             router.push('/');
         }
         setLoading(false);
     };
 
-    const handleSocialLogin = async (provider: 'google' | 'github') => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider,
+    const handleSignup = async (values: any) => {
+        setLoading(true);
+        if (values.password !== values.confirm) {
+            message.error("Passwords do not match!");
+            setLoading(false);
+            return;
+        }
+
+        const { error } = await supabase.auth.signUp({
+            email: email,
+            password: values.password,
             options: {
-                redirectTo: `${location.origin}/auth/callback`,
-            },
+                data: {
+                    first_name: values.firstName,
+                    last_name: values.lastName,
+                }
+            }
         });
-        if (error) message.error(error.message);
+
+        if (error) {
+            message.error(error.message);
+        } else {
+            message.success('Account created! Please check your email.');
+        }
+        setLoading(false);
     };
 
+    // Sub-components for stages
+    const EmailStage = () => (
+        <Form onFinish={handleEmailSubmit} layout="vertical" size="large" initialValues={{ email }}>
+            <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Valid email required' }]}>
+                <Input
+                    prefix={<MailOutlined className="text-gray-400 mr-2" />}
+                    placeholder="Enter your email"
+                    className="bg-white/70 border-gray-200 hover:bg-white focus:bg-white !rounded-xl !px-4 !py-3 !text-gray-800 text-base"
+                    autoFocus
+                />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} className="w-full bg-blue-600 hover:!bg-blue-700 h-12 !rounded-xl text-lg font-semibold shadow-lg shadow-blue-200 border-none">
+                Next
+            </Button>
+        </Form>
+    );
+
+    const PasswordStage = () => (
+        <Form onFinish={handleLogin} layout="vertical" size="large">
+            <div className="mb-4 flex items-center justify-between">
+                <span className="text-gray-600 font-medium bg-gray-100/50 px-2 py-1 rounded">{email}</span>
+                <a onClick={() => setStage('EMAIL')} className="text-blue-600 text-sm cursor-pointer hover:underline">Edit</a>
+            </div>
+            <Form.Item name="password" rules={[{ required: true, message: 'Password required' }]}>
+                <Input.Password
+                    placeholder="Enter your password"
+                    className="bg-white/70 border-gray-200 hover:bg-white focus:bg-white !rounded-xl !px-4 !py-3 !text-gray-800 text-base"
+                    autoFocus
+                />
+            </Form.Item>
+            <div className="flex items-center justify-between mb-6">
+                <a className="text-gray-500 text-sm hover:text-black cursor-pointer bg-white/50 px-2 py-1 rounded" onClick={() => setStage('SIGNUP_DETAILS')}>Not you? Create account.</a>
+                <a className="text-blue-600 font-medium hover:text-blue-800 text-sm" href="#">Forgot?</a>
+            </div>
+            <Button type="primary" htmlType="submit" loading={loading} className="w-full bg-blue-600 hover:!bg-blue-700 h-12 !rounded-xl text-lg font-semibold shadow-lg shadow-blue-200 border-none">
+                Log In
+            </Button>
+        </Form>
+    );
+
+    const SignupStage = () => (
+        <Form onFinish={handleSignup} layout="vertical" size="large">
+            <div className="mb-4 flex items-center gap-2 text-gray-400 cursor-pointer hover:text-gray-600" onClick={() => setStage('EMAIL')}>
+                <ArrowLeftOutlined /> <span className="text-sm">Back</span>
+            </div>
+            <div className="flex gap-2">
+                <Form.Item name="firstName" rules={[{ required: true, message: 'Required' }]} className="w-1/2 mb-4">
+                    <Input placeholder="First Name" className="bg-white/70 border-gray-200 !rounded-xl !px-4 !py-3 !text-gray-800" />
+                </Form.Item>
+                <Form.Item name="lastName" rules={[{ required: true, message: 'Required' }]} className="w-1/2 mb-4">
+                    <Input placeholder="Last Name" className="bg-white/70 border-gray-200 !rounded-xl !px-4 !py-3 !text-gray-800" />
+                </Form.Item>
+            </div>
+            <Form.Item name="password" rules={[{ required: true, message: 'Required' }]} className="mb-4">
+                <Input.Password placeholder="Create Password" className="bg-white/70 border-gray-200 !rounded-xl !px-4 !py-3 !text-gray-800" />
+            </Form.Item>
+            <Form.Item name="confirm" rules={[{ required: true, message: 'Required' }]} className="mb-4">
+                <Input.Password placeholder="Confirm Password" className="bg-white/70 border-gray-200 !rounded-xl !px-4 !py-3 !text-gray-800" />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} className="w-full bg-blue-600 hover:!bg-blue-700 h-12 !rounded-xl text-lg font-semibold shadow-lg shadow-blue-200 border-none">
+                Complete Signup
+            </Button>
+        </Form>
+    );
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 animate-gradient relative overflow-hidden">
-            {/* Overlay for better text readability */}
-            <div className="absolute inset-0 bg-black/60 z-0"></div>
+        <div
+            className="min-h-screen flex items-center justify-center p-4 font-sans bg-cover bg-center bg-no-repeat bg-fixed"
+            style={{ backgroundImage: "url('/login-bg-mountains.png')" }}
+        >
+            {/* Main Card Container - Contained 5:4ish Ratio look */}
+            <div className="w-full max-w-[1100px] h-[85vh] max-h-[750px] bg-white/90 backdrop-blur-xl rounded-[32px] shadow-2xl overflow-hidden flex flex-row border border-white/20">
 
-            <div className="w-full max-w-[380px] space-y-4 z-10">
-                {/* Main Card */}
-                <div className="glass-card rounded-xl p-8 flex flex-col items-center shadow-2xl">
-                    <h1 className="text-5xl font-bold text-white mb-2 tracking-tighter" style={{ fontFamily: 'cursive', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>MovieEcon</h1>
-                    <p className="text-white/80 font-medium mb-8 text-center text-sm">Welcome back to the universe.</p>
+                {/* LEFT SIDE - FORM */}
+                <div className="w-full md:w-[45%] lg:w-[40%] p-8 lg:p-12 flex flex-col justify-center relative bg-white/50 z-10 backdrop-blur-sm">
 
-                    <Form
-                        name="login"
-                        onFinish={onFinish}
-                        layout="vertical"
-                        size="large"
-                        className="w-full"
-                    >
-                        <Form.Item
-                            name="email"
-                            className="mb-4"
-                            rules={[{ required: true, message: 'Please input your email!' }]}
-                        >
-                            <Input
-                                prefix={<UserOutlined className="text-white/50" />}
-                                placeholder="Email"
-                                style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white', height: '45px' }}
-                                className="hover:!border-white/30 focus:!border-white placeholder:text-white/30 rounded-lg text-sm transition-all"
-                            />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="password"
-                            className="mb-6"
-                            rules={[{ required: true, message: 'Please input your password!' }]}
-                        >
-                            <Input.Password
-                                prefix={<LockOutlined className="text-white/50" />}
-                                placeholder="Password"
-                                style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white', height: '45px' }}
-                                className="hover:!border-white/30 focus:!border-white placeholder:text-white/30 rounded-lg text-sm transition-all"
-                            />
-                        </Form.Item>
-
-                        <Form.Item>
-                            <Button
-                                type="primary"
-                                htmlType="submit"
-                                loading={loading}
-                                block
-                                className="shadow-lg font-bold h-11 rounded-lg border-none"
-                                style={{ background: 'linear-gradient(to right, #8a2387, #e94057, #f27121)' }}
-                            >
-                                Log in
-                            </Button>
-                        </Form.Item>
-                    </Form>
-
-                    <Divider className="border-gray-500/30 text-gray-400 text-xs font-semibold my-4">OR CONTINUE WITH</Divider>
-
-                    <div className="flex gap-3 w-full">
-                        <Button block icon={<GoogleOutlined />} onClick={() => handleSocialLogin('google')} className="bg-white/10 text-white border border-white/10 font-semibold h-10 hover:!bg-white/20 !border-white/10">Google</Button>
-                        <Button block icon={<GithubOutlined />} onClick={() => handleSocialLogin('github')} className="bg-white/10 text-white border border-white/10 font-semibold h-10 hover:!bg-white/20 !border-white/10">GitHub</Button>
+                    {/* Header */}
+                    <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">✨</div>
+                            <h1 className="text-lg font-bold text-black tracking-tight">Birdwatch</h1>
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                            {stage === 'EMAIL' ? 'Hi there!' : stage === 'SIGNUP_DETAILS' ? 'Join the Flock' : 'Welcome Back'}
+                        </h2>
+                        <p className="text-gray-500 text-base">
+                            {stage === 'EMAIL' ? 'Enter your email to continue.' : stage === 'SIGNUP_DETAILS' ? 'Tell us a bit about yourself.' : 'Enter your password to access your account.'}
+                        </p>
                     </div>
 
-                    <a className="text-xs text-white/50 mt-6 hover:text-white transition-colors cursor-pointer border-b border-transparent hover:border-white/50 pb-0.5">Forgot password?</a>
+                    {/* Progressively Rendered Form */}
+                    <div className="mb-6">
+                        {stage === 'EMAIL' && <EmailStage />}
+                        {stage === 'LOGIN_PASSWORD' && <PasswordStage />}
+                        {stage === 'SIGNUP_DETAILS' && <SignupStage />}
+                    </div>
+
+                    {stage === 'EMAIL' && (
+                        <>
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t border-gray-200" />
+                                </div>
+                                <div className="relative flex justify-center text-xs">
+                                    <span className="px-4 bg-white/80 backdrop-blur rounded text-gray-400">OR CONTINUE WITH</span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                <Button className="h-12 !rounded-xl border border-gray-300 flex items-center justify-center gap-3 hover:bg-white bg-white/50 text-gray-700 font-medium text-base">
+                                    <AppleFilled style={{ fontSize: '20px' }} /> Log in with Apple
+                                </Button>
+                                <Button className="h-12 !rounded-xl border border-gray-300 flex items-center justify-center gap-3 hover:bg-white bg-white/50 text-gray-700 font-medium text-base">
+                                    <GoogleOutlined style={{ fontSize: '20px', color: '#EA4335' }} /> Log in with Google
+                                </Button>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Footer Text */}
+                    <p className="mt-auto pt-4 text-center text-xs text-gray-400">
+                        © 2026 Birdwatch. All rights reserved. <br />
+                        <a href="#" className="hover:text-gray-600 underline">Terms</a> &bull; <a href="#" className="hover:text-gray-600 underline">Privacy</a>
+                    </p>
+
                 </div>
 
-                {/* Signup Link */}
-                <div className="glass-card rounded-xl p-4 text-center text-white/80 text-sm shadow-xl">
-                    Don't have an account? <Link href="/signup" className="text-pink-500 font-bold hover:text-pink-400 ml-1">Sign up</Link>
+                {/* RIGHT SIDE - IMAGE */}
+                <div className="hidden md:block w-[55%] lg:w-[60%] bg-blue-900 relative overflow-hidden">
+                    <img
+                        src="/login-bg.png"
+                        alt="Liquid Blue Art"
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-12 left-12 max-w-md text-white">
+                        <h2 className="text-4xl font-bold mb-3 drop-shadow-md">Find your flow.</h2>
+                        <p className="text-lg opacity-90 drop-shadow-md leading-relaxed">Immerse yourself in a community that values creativity and fluidity.</p>
+                    </div>
                 </div>
+
             </div>
         </div>
     );

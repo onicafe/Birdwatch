@@ -26,8 +26,9 @@ export default function DesktopSidebar() {
     return (
         <div className="hidden md:flex flex-col w-[245px] fixed h-full border-r border-white/10 px-3 pt-8 pb-5 bg-black z-50">
             {/* Logo */}
-            <div className="px-3 mb-8 cursor-pointer" onClick={() => router.push('/')}>
-                <h1 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'cursive' }}>MovieEcon</h1>
+            <div className="flex items-center gap-3 px-3 mb-8 cursor-pointer group" onClick={() => router.push('/')}>
+                <img src="/logo.png" alt="Birdwatch" className="h-10 w-auto object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-transform group-hover:scale-110" />
+                <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 tracking-tighter" style={{ fontFamily: 'sans-serif' }}>Birdwatch</h1>
             </div>
 
             {/* Nav Items */}

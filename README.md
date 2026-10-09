@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Birdwatch 🐦
 
-## Getting Started
+## 💡 A Ideia (The Idea)
+Birdwatch é uma plataforma de rede social moderna, inspirada na fluidez e no design focado em texto do Threads e do antigo Twitter. A ideia central é criar um ambiente limpo e responsivo para microblogging, onde os usuários podem compartilhar pensamentos rápidos, criar "fios" (threads) de conversas e interagir de forma intuitiva.
 
-First, run the development server:
+## 🎯 O Objetivo (The Objective)
+O principal objetivo do Birdwatch é oferecer uma experiência de usuário (UX) excepcional e moderna. Isso inclui:
+- **Autenticação Progressiva:** Um fluxo de login amigável que primeiro pede o e-mail e depois decide se o usuário precisa digitar a senha (se já tiver conta) ou criar um perfil (se for novo).
+- **Interface Fluida e Responsiva:** Uma interface baseada em duas colunas, adaptável para mobile e desktop.
+- **Interações Rápidas:** Foco em tornar o ato de postar, curtir e comentar o mais rápido e visualmente agradável possível.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 O Que Já Temos Feito (Current Features)
+Até o momento, estabelecemos a base visual e arquitetural do projeto:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Setup do Projeto:** Estruturado com `Next.js 16` (App Router), `Tailwind CSS`, `Ant Design` e `Lucide React` para ícones.
+- **Backend/Auth:** Configuração inicial com `Supabase` para banco de dados e autenticação de usuários.
+- **Página de Login Personalizada:** 
+  - Layout *split-screen* com um background abstrato ("Blue Liquid/Mountains").
+  - Fluxo de autenticação progressiva implementado via *Server Actions* (Email -> Checagem -> Senha/Cadastro).
+- **Feed Principal (Estilo Threads):**
+  - **FeedLayout:** Container responsivo de duas colunas.
+  - **PostComposer:** Área dedicada para criar novas postagens.
+  - **FeedCard:** Componente de postagem que exibe autor, avatar, conteúdo, botões de ação (curtir, comentar) e linhas visuais conectando "fios" (threads).
+  - **RightSidebar:** Barra lateral exibindo sugestões de usuários e tópicos "Em Alta no Birdwatch".
+- **Testes:** Script Python criado para gerar usuários de teste rapidamente (`demo@blast.com`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🛠 Tecnologias Utilizadas
+- **Frontend:** Next.js, React, Tailwind CSS, Ant Design.
+- **Backend & Auth:** Supabase.
+- **Ícones:** Lucide React & Ant Design Icons.
